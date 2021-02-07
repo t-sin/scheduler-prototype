@@ -3,4 +3,5 @@
                "bordeaux-threads")
   :serial t
   :components ((:file "event")
+               (:file "sound")
                (:file "main")))
