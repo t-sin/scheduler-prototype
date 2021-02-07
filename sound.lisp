@@ -15,46 +15,60 @@
 (defstruct audio-state
   sample-rate elapsed-samples event-queue)
 
-(defun start-portaudio (state signal-fn)
+(defun set-float32 (vec offset val)
+  (let ((v (ieee-floats:encode-float32 val)))
+    (loop
+      :for n :from 0 :below 4
+      :for shift := (* n 8)
+      :for byte := (ash (logand v (ash #xff shift)) (- shift))
+      :do (setf (aref vec (+ n (* 4 offset))) byte))))
+
+(defparameter *device-name* "sysdefault:CARD=USB")
+
+(defun start-sound (state signal-fn)
   (lambda ()
     (let ((frames-per-buffer 1024)
           (sample-rate (audio-state-sample-rate state)))
-      (pa:with-audio
-        (pa:with-default-audio-stream (stream 0 2
-                                              :frames-per-buffer frames-per-buffer
-                                              :sample-format :float
-                                              :sample-rate sample-rate)
-          (let ((buffer (make-array (* 2 frames-per-buffer)
-                                    :initial-element 0.0
-                                    :element-type 'single-float)))
-            (loop
-              (loop
-                :for n :from 0 :below frames-per-buffer
-                :do (multiple-value-bind (l r)
-                        (funcall signal-fn state)
-                      (setf (aref buffer (* 2 n)) (coerce l 'single-float)
-                            (aref buffer (1+ (* 2 n))) (coerce r 'single-float))))
-              (pa:write-stream stream buffer))))))))
+      (also-alsa:with-alsa-device (pcm *device-name* frames-per-buffer 'single-float
+                                       :direction :output
+                                       :channels-count 2
+                                       :sample-rate sample-rate)
+        (also-alsa:alsa-start pcm)
+        (loop
+          (loop
+            :with buffer := (also-alsa:buffer pcm)
+            :for n :from 0 :below (also-alsa:buffer-size pcm)
+            :do (multiple-value-bind (l r)
+                    (funcall signal-fn state)
+                  (set-float32 buffer n l)
+                  ;; (set-float32 buffer (* 2 n) r)
+))
+          ;; (multiple-value-bind (avail delay)
+          ;;     (also-alsa:get-avail-delay pcm)
+          ;;   (declare (ignore avail delay))
+          (also-alsa:alsa-write pcm)
+          (also-alsa:alsa-wait pcm 10))))))
 
 (defparameter *sound-thread* nil)
 (defparameter *audio-state* nil)
 
 (defun init ()
-  (let ((state (make-audio-state :sample-rate 44100D0
+  (let ((state (make-audio-state :sample-rate 44100
                                  :elapsed-samples 0
                                  :event-queue ())))
     (setf *audio-state* state)))
 
 (defun start (signal-fn)
   (unless *sound-thread*
-    (let ((th (bt:make-thread (start-portaudio *audio-state* signal-fn)
+    (let ((th (bt:make-thread (start-sound *audio-state* signal-fn)
                                :name "pukunui-sound-thread"
                                :initial-bindings `((*standard-output* . ,*standard-output*)))))
       (setf *sound-thread* th))))
 
 (defun stop ()
   (when *sound-thread*
-    (bt:destroy-thread *sound-thread*)
+    (when (bt:thread-alive-p *sound-thread*)
+      (bt:destroy-thread *sound-thread*))
     (setf *sound-thread* nil)))
 
 (defun pulse (x &optional (duty (/ 1 2)))
@@ -72,7 +86,7 @@
                   (pulse-osc-duty pulse-osc)))
         (freq (pulse-osc-freq pulse-osc))
         (sample-rate (audio-state-sample-rate audio-state)))
-    (incf (pulse-osc-phase pulse-osc) (/ freq sample-rate 2))
+    (incf (pulse-osc-phase pulse-osc) (/ freq sample-rate 4))
     v))
 
 (defun adsr (a d s r state elapsed)
