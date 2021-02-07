@@ -31,18 +31,14 @@
           (sample-rate (audio-state-sample-rate state)))
       (also-alsa:with-alsa-device (pcm *device-name* frames-per-buffer 'single-float
                                        :direction :output
-                                       :channels-count 2
+                                       :channels-count 1
                                        :sample-rate sample-rate)
         (also-alsa:alsa-start pcm)
         (loop
           (loop
             :with buffer := (also-alsa:buffer pcm)
             :for n :from 0 :below (also-alsa:buffer-size pcm)
-            :do (multiple-value-bind (l r)
-                    (funcall signal-fn state)
-                  (set-float32 buffer n l)
-                  ;; (set-float32 buffer (* 2 n) r)
-))
+            :do (set-float32 buffer n (funcall signal-fn state)))
           ;; (multiple-value-bind (avail delay)
           ;;     (also-alsa:get-avail-delay pcm)
           ;;   (declare (ignore avail delay))
@@ -86,7 +82,7 @@
                   (pulse-osc-duty pulse-osc)))
         (freq (pulse-osc-freq pulse-osc))
         (sample-rate (audio-state-sample-rate audio-state)))
-    (incf (pulse-osc-phase pulse-osc) (/ freq sample-rate 4))
+    (incf (pulse-osc-phase pulse-osc) (/ freq sample-rate 2))
     v))
 
 (defun adsr (a d s r state elapsed)
@@ -109,7 +105,4 @@
       (env (make-envelope)))
   (declare (ignorable env))
   (defun process-signal (state)
-    (handler-case
-        (let ((oscval (* 0.3 (process-pulse osc state))))
-          (values oscval oscval))
-      (condition (c) (print c)))))
+    (* 0.3 (process-pulse osc state))))
