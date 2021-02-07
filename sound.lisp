@@ -15,10 +15,10 @@
 (defstruct audio-state
   sample-rate elapsed-samples event-queue)
 
-(defun start-portaudio (processor signal-fn)
+(defun start-portaudio (state signal-fn)
   (lambda ()
     (let ((frames-per-buffer 1024)
-          (sample-rate (audio-state-sample-rate processor)))
+          (sample-rate (audio-state-sample-rate state)))
       (pa:with-audio
         (pa:with-default-audio-stream (stream 0 2
                                               :frames-per-buffer frames-per-buffer
@@ -31,7 +31,7 @@
               (loop
                 :for n :from 0 :below frames-per-buffer
                 :do (multiple-value-bind (l r)
-                        (funcall signal-fn processor)
+                        (funcall signal-fn state)
                       (setf (aref buffer (* 2 n)) (coerce l 'single-float)
                             (aref buffer (1+ (* 2 n))) (coerce r 'single-float))))
               (pa:write-stream stream buffer))))))))
@@ -48,7 +48,8 @@
 (defun start (signal-fn)
   (unless *sound-thread*
     (let ((th (bt:make-thread (start-portaudio *audio-state* signal-fn)
-                              :name "pukunui-sound-thread")))
+                               :name "pukunui-sound-thread"
+                               :initial-bindings `((*standard-output* . ,*standard-output*)))))
       (setf *sound-thread* th))))
 
 (defun stop ()
@@ -94,5 +95,7 @@
       (env (make-envelope)))
   (declare (ignorable env))
   (defun process-signal (state)
-    (let ((oscval (* 0.4 (process-pulse osc state))))
-      (values oscval oscval))))
+    (handler-case
+        (let ((oscval (* 0.3 (process-pulse osc state))))
+          (values oscval oscval))
+      (condition (c) (print c)))))
