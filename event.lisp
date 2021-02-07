@@ -11,7 +11,6 @@
    ;; events
    #:event
    #:event-timepos
-   #:event-type
    #:event-body
    #:event/note-on
    #:event/note-on-freq
