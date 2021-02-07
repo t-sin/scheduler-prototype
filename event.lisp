@@ -1,16 +1,27 @@
 (defpackage #:scheduler-prototype.event
   (:use #:cl)
-  (:export #:measure
-           #:measure-beats
-           #:measure-nots
-           #:timepos
-           #:timepos-bar
-           #:timepos-tick
-           #:event
-           #:event-timepos
-           #:event-type
-           #:event-body
-           #:load-events))
+  (:export
+   ;;musical time
+   #:measure
+   #:measure-beats
+   #:measure-nots
+   #:timepos
+   #:timepos-bar
+   #:timepos-tick
+   ;; events
+   #:event
+   #:event-timepos
+   #:event-type
+   #:event-body
+   #:event/note-on
+   #:event/note-on-freq
+   #:event/note-off
+   #:event/set-bpm
+   #:event/set-bpm-bpm
+   #:event/set-measure
+   #:event/set-measure-beats
+   #:event/set-measure-notes
+   #:load-events))
 (in-package #:scheduler-prototype.event)
 
 (defconstant +ticks-per-bar+ 1200)
@@ -22,10 +33,16 @@
   bar tick)
 
 (defun timepos+ (a b)
-  a)
+  (let ((bar (+ (timepos-bar a) (timepos-bar b)))
+        (tick (+ (timepos-tick a) (timepos-tick b))))
+    (multiple-value-bind (quot rem)
+        (floor tick +ticks-per-bar+)
+      (make-timepos :bar (+ bar quot) :tick rem))))
 
-(defun timepos-from-length (timepos)
-  0)
+(defun timepos-from-length (length)
+  (let ((length-in-tick (/ +ticks-per-bar+ length)))
+    (timepos+ (make-timepos :bar 0 :tick 0)
+              (make-timepos :bar 0 :tick length-in-tick))))
 
 (defstruct event/note-on freq)
 (defstruct event/note-off)
@@ -59,12 +76,12 @@
 
 (defstruct event
   (timepos nil :type timepos)
-  (body nil :type (member event/note-on
-                          event/note-off
-                          event/set-bpm
-                          event/set-measure)))
+  (body nil :type (or event/note-on
+                      event/note-off
+                      event/set-bpm
+                      event/set-measure)))
 
-(defun load-event (pathname)
+(defun load-events (pathname)
   (if (probe-file pathname)
       (let ((sexp (with-open-file (in pathname :direction :input)
                     (read in)))
@@ -72,7 +89,7 @@
             (events ()))
         (let* ((bpm (getf sexp :bpm))
                (set-bpm (make-event/set-bpm :bpm (or bpm 120)))
-               (event (make-event :timepos (copy-timepos timepos) :body set-bpm))) 
+               (event (make-event :timepos (copy-timepos timepos) :body set-bpm)))
           (push event events))
 
         (let* ((measure (getf sexp :measure))
