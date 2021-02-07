@@ -105,4 +105,5 @@
       (env (make-envelope)))
   (declare (ignorable env))
   (defun process-signal (state)
+    ;; TODO: process events in queue
     (* 0.3 (process-pulse osc state))))
