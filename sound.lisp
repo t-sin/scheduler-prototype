@@ -31,14 +31,17 @@
           (sample-rate (audio-state-sample-rate state)))
       (also-alsa:with-alsa-device (pcm *device-name* frames-per-buffer 'single-float
                                        :direction :output
-                                       :channels-count 1
+                                       :channels-count 2
                                        :sample-rate sample-rate)
         (also-alsa:alsa-start pcm)
         (loop
           (loop
             :with buffer := (also-alsa:buffer pcm)
-            :for n :from 0 :below (also-alsa:buffer-size pcm)
-            :do (set-float32 buffer n (funcall signal-fn state)))
+            :for n :from 0 :below (also-alsa:buffer-size pcm) :by 2
+            :do (multiple-value-bind (l r)
+                    (funcall signal-fn state)
+                  (set-float32 buffer n l)
+                  (set-float32 buffer (+ n 1) r)))
           ;; (multiple-value-bind (avail delay)
           ;;     (also-alsa:get-avail-delay pcm)
           ;;   (declare (ignore avail delay))
@@ -106,4 +109,5 @@
   (declare (ignorable env))
   (defun process-signal (state)
     ;; TODO: process events in queue
-    (* 0.3 (process-pulse osc state))))
+    (let ((v (* 0.3 (process-pulse osc state))))
+      (values v v))))
