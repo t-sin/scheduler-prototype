@@ -13,7 +13,7 @@
 (in-package #:scheduler-prototype.sound)
 
 (defstruct audio-state
-  sample-rate elapsed-samples event-queue)
+  sample-rate playing-p elapsed-samples event-queue)
 
 (defun set-float32 (vec offset val)
   (let ((v (ieee-floats:encode-float32 val)))
@@ -39,6 +39,7 @@
                                               :rate sample-rate
                                               :buffer-size buffer-size)
           (loop
+            :while (audio-state-playing-p state)
             :do (loop
                   :for n :from 0 :below number-of-frames
                   :do (multiple-value-bind (l r)
@@ -54,6 +55,7 @@
 
 (defun init ()
   (let ((state (make-audio-state :sample-rate 44100
+                                 :playing-p t
                                  :elapsed-samples 0
                                  :event-queue ())))
     (setf *audio-state* state)))
@@ -68,7 +70,8 @@
 (defun stop ()
   (when *sound-thread*
     (when (bt:thread-alive-p *sound-thread*)
-      (bt:destroy-thread *sound-thread*))
+      (setf (audio-state-playing-p *audio-state*) nil))
+      ;;(bt:destroy-thread *sound-thread*))
     (setf *sound-thread* nil)))
 
 (defun pulse (x &optional (duty (/ 1 2)))
