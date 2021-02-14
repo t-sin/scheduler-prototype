@@ -15,6 +15,9 @@
 (defstruct audio-state
   sample-rate playing-p elapsed-samples event-queue)
 
+(defparameter *sound-thread* nil)
+(defparameter *audio-state* nil)
+
 (defun set-float32 (vec offset val)
   (let ((v (ieee-floats:encode-float32 val)))
     (loop
@@ -41,10 +44,9 @@
                           (funcall signal-fn state)
                         (setf (aref buffer (* 2 n)) l
                               (aref buffer (1+ (* 2 n))) r)))
-                (pa:write-stream stream buffer)))))))
-
-(defparameter *sound-thread* nil)
-(defparameter *audio-state* nil)
+                (pa:write-stream stream buffer)))))
+    (setf *audio-state* nil
+          *sound-thread* nil)))
 
 (defun init ()
   (let ((state (make-audio-state :sample-rate 44100d0
