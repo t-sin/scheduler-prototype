@@ -4,5 +4,6 @@
                "ieee-floats")
   :serial t
   :components ((:file "event")
+               (:file "scheduler")
                (:file "sound")
                (:file "main")))
