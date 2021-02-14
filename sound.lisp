@@ -48,11 +48,11 @@
     (setf *audio-state* nil
           *sound-thread* nil)))
 
-(defun init ()
+(defun init (queue)
   (let ((state (make-audio-state :sample-rate 44100d0
                                  :playing-p t
                                  :elapsed-samples 0
-                                 :event-queue ())))
+                                 :event-queue queue)))
     (setf *audio-state* state)))
 
 (defun start (signal-fn)

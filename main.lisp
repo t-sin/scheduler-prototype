@@ -11,10 +11,11 @@
   (bpm 120) )
 
 (defun start (&optional (pathname "./sequence-data.lisp"))
-  (let ((events (load-events pathname)))
-    (sp-sound:init)
+  (let ((events (load-events pathname))
+        (queue nil))
+    (sp-sound:init queue)
     (sp-sound:start #'sp-sound:process-signal)
-    (sp-scheduler:start events)))
+    (sp-scheduler:start events queue)))
 
 (defun stop ()
   (sp-scheduler:stop)
