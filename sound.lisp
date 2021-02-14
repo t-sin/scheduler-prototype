@@ -23,7 +23,7 @@
       :for byte := (ash (logand v (ash #xff shift)) (- shift))
       :do (setf (aref vec (+ n (* 4 offset))) byte))))
 
-(defun start-sound (state signal-fn)
+(defun make-sound-fn (state signal-fn)
   (lambda ()
     (let* ((number-of-frames 1024)
            (sample-rate (audio-state-sample-rate state)))
@@ -55,7 +55,7 @@
 
 (defun start (signal-fn)
   (unless *sound-thread*
-    (let ((th (bt:make-thread (start-sound *audio-state* signal-fn)
+    (let ((th (bt:make-thread (make-sound-fn *audio-state* signal-fn)
                                :name "pukunui-sound-thread"
                                :initial-bindings `((*standard-output* . ,*standard-output*)))))
       (setf *sound-thread* th))))
