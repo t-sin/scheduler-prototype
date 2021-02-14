@@ -26,35 +26,28 @@
 (defun start-sound (state signal-fn)
   (lambda ()
     (let* ((number-of-frames 1024)
-           (frame-size 4)
-           (channels 2)
-           (buffer-size (* frame-size channels number-of-frames))
-           (sample-rate (audio-state-sample-rate state))
-           (buffer (make-array buffer-size :element-type '(unsigned-byte 8))))
-      (handler-bind ((condition (lambda (c)
-                                  (print c *standard-output*))))
-        (pulseaudio:with-audio-stream (stream :direction :output
-                                              :sample-format :float32le
-                                              :channels channels
-                                              :rate sample-rate
-                                              :buffer-size buffer-size)
+           (sample-rate (audio-state-sample-rate state)))
+      (pa:with-audio
+          (pa:with-default-audio-stream (stream 0 2
+                                                  :frames-per-buffer number-of-frames
+                                                  :sample-format :float
+                                                  :sample-rate sample-rate)
           (loop
+            :with buffer := (make-array (* 2 number-of-frames) :element-type 'single-float)
             :while (audio-state-playing-p state)
             :do (loop
                   :for n :from 0 :below number-of-frames
                   :do (multiple-value-bind (l r)
                           (funcall signal-fn state)
-                        (let ((pos (* n channels frame-size)))
-                          (set-float32 buffer n l)
-                          (set-float32 buffer (1+ n) r))))
-                (pulseaudio:write-stream stream buffer)
-                (pulseaudio:drain-stream stream)))))))
+                        (setf (aref buffer (* 2 n)) l
+                              (aref buffer (1+ (* 2 n))) r)))
+                (pa:write-stream stream buffer)))))))
 
 (defparameter *sound-thread* nil)
 (defparameter *audio-state* nil)
 
 (defun init ()
-  (let ((state (make-audio-state :sample-rate 44100
+  (let ((state (make-audio-state :sample-rate 44100d0
                                  :playing-p t
                                  :elapsed-samples 0
                                  :event-queue ())))
