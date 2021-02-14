@@ -8,6 +8,8 @@
    #:timepos
    #:timepos-bar
    #:timepos-tick
+   #:make-timepos
+   #:timepos+
    ;; events
    #:event
    #:event-timepos
