@@ -23,30 +23,31 @@
       :for byte := (ash (logand v (ash #xff shift)) (- shift))
       :do (setf (aref vec (+ n (* 4 offset))) byte))))
 
-(defparameter *device-name* "sysdefault:CARD=USB")
-
 (defun start-sound (state signal-fn)
   (lambda ()
-    (let ((frames-per-buffer 1024)
-          (sample-rate (audio-state-sample-rate state)))
-      (also-alsa:with-alsa-device (pcm *device-name* frames-per-buffer 'single-float
-                                       :direction :output
-                                       :channels-count 2
-                                       :sample-rate sample-rate)
-        (also-alsa:alsa-start pcm)
-        (loop
+    (let* ((number-of-frames 1024)
+           (frame-size 4)
+           (channels 2)
+           (buffer-size (* frame-size channels number-of-frames))
+           (sample-rate (audio-state-sample-rate state))
+           (buffer (make-array buffer-size :element-type '(unsigned-byte 8))))
+      (handler-bind ((condition (lambda (c)
+                                  (print c *standard-output*))))
+        (pulseaudio:with-audio-stream (stream :direction :output
+                                              :sample-format :float32le
+                                              :channels channels
+                                              :rate sample-rate
+                                              :buffer-size buffer-size)
           (loop
-            :with buffer := (also-alsa:buffer pcm)
-            :for n :from 0 :below (also-alsa:buffer-size pcm) :by 2
-            :do (multiple-value-bind (l r)
-                    (funcall signal-fn state)
-                  (set-float32 buffer n l)
-                  (set-float32 buffer (+ n 1) r)))
-          ;; (multiple-value-bind (avail delay)
-          ;;     (also-alsa:get-avail-delay pcm)
-          ;;   (declare (ignore avail delay))
-          (also-alsa:alsa-write pcm)
-          (also-alsa:alsa-wait pcm 10))))))
+            :do (loop
+                  :for n :from 0 :below number-of-frames
+                  :do (multiple-value-bind (l r)
+                          (funcall signal-fn state)
+                        (let ((pos (* n channels frame-size)))
+                          (set-float32 buffer n l)
+                          (set-float32 buffer (1+ n) r))))
+                (pulseaudio:write-stream stream buffer)
+                (pulseaudio:drain-stream stream)))))))
 
 (defparameter *sound-thread* nil)
 (defparameter *audio-state* nil)

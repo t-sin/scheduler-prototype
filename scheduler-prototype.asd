@@ -1,5 +1,5 @@
 (defsystem :scheduler-prototype
-  :depends-on ("also-alsa"
+  :depends-on ("cl-pulseaudio"
                "bordeaux-threads"
                "ieee-floats")
   :serial t
