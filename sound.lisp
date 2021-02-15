@@ -110,5 +110,5 @@
   (defun process-signal (state)
     ;; TODO: process events in queue
     (let ((v (* 0.3 (process-pulse osc state))))
-      (prog1 (values v v)
-        (incf (audio-state-elapsed-samples state))))))
+      (incf (audio-state-elapsed-samples state))
+      (values v v))))
