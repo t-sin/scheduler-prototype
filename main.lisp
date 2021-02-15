@@ -12,7 +12,7 @@
 
 (defun start (&optional (pathname "./sequence-data.lisp"))
   (let ((events (load-events pathname))
-        (queue nil))
+        (queue (queues:make-queue :simple-queue)))
     (sp-sound:init queue)
     (sp-sound:start #'sp-sound:process-signal)
     (sp-scheduler:start events queue)))
