@@ -58,7 +58,7 @@
 (defun start (signal-fn)
   (unless *sound-thread*
     (let ((th (bt:make-thread (make-sound-fn *audio-state* signal-fn)
-                               :name "pukunui-sound-thread"
+                               :name "sp: audio thread"
                                :initial-bindings `((*standard-output* . ,*standard-output*)))))
       (setf *sound-thread* th))))
 

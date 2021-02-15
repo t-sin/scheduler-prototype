@@ -26,7 +26,7 @@
           (specials `((*standard-output* . ,*standard-output*))))
       (setf *scheduler-state* state
             *scheduler-thread* (bt:make-thread (make-scheduler-fn state)
-                                               :name "scheduler thread"
+                                               :name "sp: scheduler thread"
                                                :initial-bindings specials)))))
 
 (defun stop ()
