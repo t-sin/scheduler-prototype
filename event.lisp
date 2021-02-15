@@ -117,20 +117,3 @@
 
         (coerce (nreverse events) 'vector))
       (error "file ~s does not exist." pathname)))
-
-(defclass queue ()
-  ((vec :initform (make-array 1024)
-        :accessor queue-vec)
-   (head :initform 0
-         :accessor queue-head)
-   (tail :initform 0
-         :accessor queue-tail)))
-
-(defmethod enqueue ((queue queue) event)
-  nil)
-
-(defmethod dequeue ((queue queue))
-  nil)
-
-(defmethod peek ((queue queue))
-  nil)
