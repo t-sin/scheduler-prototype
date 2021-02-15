@@ -63,10 +63,11 @@
       (setf *sound-thread* th))))
 
 (defun stop ()
+  (when *audio-state*
+    (setf (audio-state-playing-p *audio-state*) nil))
   (when *sound-thread*
     (when (bt:thread-alive-p *sound-thread*)
-      (setf (audio-state-playing-p *audio-state*) nil))
-      ;;(bt:destroy-thread *sound-thread*))
+      (bt:destroy-thread *sound-thread*))
     (setf *sound-thread* nil)))
 
 (defun pulse (x &optional (duty (/ 1 2)))

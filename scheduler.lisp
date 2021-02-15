@@ -30,7 +30,9 @@
                                                :initial-bindings specials)))))
 
 (defun stop ()
+  (when *scheduler-state*
+    (setf (scheduler-running-p *scheduler-state*) nil))
   (when *scheduler-thread*
     (when (bt:thread-alive-p *scheduler-thread*)
-      (setf (scheduler-running-p *scheduler-state*) nil))
+      (bt:destroy-thread *scheduler-thread*))
     (setf *scheduler-thread* nil)))
