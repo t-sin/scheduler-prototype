@@ -129,5 +129,8 @@
 (defmethod enqueue ((queue queue) event)
   nil)
 
-(defmethod dequeue ((queue queue) event)
+(defmethod dequeue ((queue queue))
+  nil)
+
+(defmethod peek ((queue queue))
   nil)
