@@ -10,19 +10,20 @@
   (running-p nil :type (or t nil))
   (now (make-timepos :bar 0 :tick 0) :type timepos)
   (events nil)
-  (event-queue nil))
+  (queue nil))
 
 (defparameter *scheduler-thread* nil)
 (defparameter *scheduler-state* nil)
 
 (defun make-scheduler-fn (state)
   (lambda ()
+    (print state)
     (setf *scheduler-state* nil
           *scheduler-thread* nil)))
 
-(defun start (events event-queue)
+(defun start (events queue)
   (unless *scheduler-thread*
-    (let ((state (make-scheduler :events events :event-queue event-queue))
+    (let ((state (make-scheduler :events events :queue queue))
           (specials `((*standard-output* . ,*standard-output*))))
       (setf *scheduler-state* state
             *scheduler-thread* (bt:make-thread (make-scheduler-fn state)

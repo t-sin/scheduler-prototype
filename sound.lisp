@@ -13,7 +13,10 @@
 (in-package #:scheduler-prototype.sound)
 
 (defstruct audio-state
-  sample-rate playing-p elapsed-samples event-queue)
+  (sample-rate 44100d0)
+  (playing-p t)
+  (elapsed-samples 0)
+  (event-queue))
 
 (defparameter *sound-thread* nil)
 (defparameter *audio-state* nil)
